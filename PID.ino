@@ -31,8 +31,8 @@ void angle_PID_compute(void)
       output_R = -255;
 
 #ifdef MOTOR_ENABLE
-      // motor1.setSpeed(output_L);
-      // motor2.setSpeed(output_R);
+      motor1.setSpeed(output_L);
+      motor2.setSpeed(-output_R);
     // Motor(LFT, output_L);
     // Motor(RHT, output_R);
 #endif

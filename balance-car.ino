@@ -17,7 +17,7 @@ MotorDC motor2(6,7);
 #define COMDONE 0x0020     //帧数据结束标志
 
 double angleSetpoint, angleInput, angleOutput;
-PID anglePID(&angleInput, &angleOutput, &angleSetpoint,30,50,0.50, DIRECT);//REVERSE DIRECT
+PID anglePID(&angleInput, &angleOutput, &angleSetpoint,30,250,0.50, DIRECT);//REVERSE DIRECT
 
 /***************MPU6050变量定义**********************/
 double accX, accY, accZ;
@@ -116,9 +116,9 @@ void setup()
 
 	FLAG |= NONSTART;
 
-	angleSetpoint = 180;
+	angleSetpoint = atan2(accX, accZ) * RAD_TO_DEG + 180.0;
 
-  	anglePID.SetMode(AUTOMATIC);
+  	// anglePID.SetMode(AUTOMATIC);
   
 
   	motor1.setSpeed(0);
@@ -142,18 +142,18 @@ void loop()
 
   	display.println(micros());
 
-	anglePID.SetOutputLimits(-254,254);
-  	anglePID.SetSampleTime(5);
+	// anglePID.SetOutputLimits(-254,254);
+  	// anglePID.SetSampleTime(5);
   // myPID.SetMode(AUTOMATIC);
-  	anglePID.Compute();
+  	// anglePID.Compute();
 
   	display.println(angleOutput);
 
 
   	display.display();
 
-	motor1.setSpeed(angleOutput);
-	motor2.setSpeed(-angleOutput);
+	// motor1.setSpeed(angleOutput);
+	// motor2.setSpeed(-angleOutput);
 
 
 }
