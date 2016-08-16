@@ -6,12 +6,15 @@
 #include "MotorDC.h"
 #include <PID_v1.h>
 #include "I2Cdev.h"
+#include <SoftwareSerial.h>
+
+SoftwareSerial bluetoothSerial(4, 12); // RX, TX
 
 MotorDC motor1(5,8);
 MotorDC motor2(6,7);
 
 // PID
-double angleSetpoint, angleInput, angleOutput;
+double angleSetpoint = 175.8, angleInput, angleOutput;
 double angleP = 10, angleI = 100,  angleD = 0.2;
 PID anglePID(&angleInput, &angleOutput, &angleSetpoint,angleP,angleI,angleD, DIRECT);//REVERSE DIRECT
 
@@ -38,7 +41,8 @@ void IMU_fillter(void);           //IMU角度融合
 
 void setup()
 {
-	Serial.begin(115200);  //蓝牙串口
+	bluetoothSerial.begin(9600);
+
   	Wire.begin();           //I2C总线
 
 	display.begin(SSD1306_SWITCHCAPVCC);
@@ -77,7 +81,6 @@ void setup()
 
 
 	angleInput = atan2(accX, accZ) * RAD_TO_DEG + 180.0;
-  	angleSetpoint = 180;
   	anglePID.SetOutputLimits(-254,254);
   	anglePID.SetSampleTime(10);
   	anglePID.SetMode(AUTOMATIC);
@@ -88,7 +91,6 @@ void setup()
 
 void loop()
 {
-
 	angleInput = atan2(accX, accZ) * RAD_TO_DEG + 180.0;
 	anglePID.SetTunings(angleP, angleI, angleD);      // * While most users will set the tunings once in the 
 	anglePID.Compute();
@@ -99,14 +101,62 @@ void loop()
 
 	display.println(atan2(accX, accZ) * RAD_TO_DEG + 180.0);
 	display.println(angleOutput);
-	display.println(angleP,angleI,angleD);
+	display.println((String)angleP+" ,"
+		+(String)angleI+" ,"+(String)angleD);
   	display.display();
 
 	motor1.setSpeed(angleOutput);
-	motor2.setSpeed(-angleOutput);
+	motor2.setSpeed(angleOutput);
 
 	// resetFunc();
 	// delay(10000);
 
+	bluetoothListen();
   	IMU_fillter();//3ms
+}
+
+
+String command;
+void bluetoothListen(){
+
+  while (bluetoothSerial.available())
+  {
+    char nullByte = char(bluetoothSerial.read());
+
+    command += nullByte;
+    if(command[0] != '@'){
+      command = "";
+      continue;
+    }
+    if (nullByte == ';')
+    {
+        setPID(command,&angleP,&angleI,&angleD);
+        command = "";
+        return;
+    }
+  }
+}
+
+void setPID(String str, double *p,double *i,double *d){
+  if(str[1] == '-'){
+   if(str[3] == 'p') {
+      *p-=0.5;
+   }else if(str[3] == 'i'){
+      *i-=5;
+   }else if(str[3] == 'd'){
+      *d-=0.01;
+   }
+
+  }else if(str[1] == '+'){
+   if(str[3] == 'p') {
+        *p+=0.5;
+     }else if(str[3] == 'i'){
+        *i+=5;
+     }else if(str[3] == 'd'){
+        *d+=0.01;
+     }
+   
+  }else{
+    bluetoothSerial.println("error: "+str);
+  }
 }
